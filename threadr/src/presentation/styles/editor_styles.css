@@ -1,0 +1,376 @@
+/* Global Styles */
+:root {
+    --color-bg-primary: #030712;
+    /* Deep Slate */
+    --color-bg-secondary: #0f172a;
+    /* Sidebar/Card BG */
+    --color-bg-tertiary: #1f2937;
+    /* Input/Form BG */
+    --color-text-primary: #ffffff;
+    --color-text-secondary: #94a3b8;
+    /* Gray/Subtle Text */
+    --color-indigo: #4f46e5;
+    /* Primary Action/Highlight */
+    --color-indigo-dark: #4338ca;
+    --color-green: #10b981;
+    /* Success/Add */
+    --color-red: #dc2626;
+    /* Danger/Delete */
+    --color-yellow: #d97706;
+    /* Export/Warning */
+}
+
+body {
+    margin: 0;
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* --- App Container --- */
+.app-container {
+    min-height: 100vh;
+    background-color: var(--color-bg-primary);
+    color: var(--color-text-primary);
+    display: flex;
+}
+
+/* --- Sidebar --- */
+.sidebar {
+    width: 18rem;
+    /* Slightly wider sidebar */
+    background-color: var(--color-bg-secondary);
+    border-right: 1px solid #1e293b;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar-header {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--color-indigo);
+}
+
+.sidebar-error {
+    background-color: #7f1d1d;
+    /* Red-900 */
+    color: #fca5a5;
+    /* Red-300 */
+    padding: 0.75rem;
+    font-size: 0.875rem;
+    border-radius: 0.5rem;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.node-list {
+    overflow-y: auto;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding-right: 5px;
+    /* Space for scrollbar */
+}
+
+.node-button {
+    width: 100%;
+    text-align: left;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    transition: background-color 150ms;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    background-color: var(--color-bg-tertiary);
+    color: var(--color-text-primary);
+    border: none;
+    cursor: pointer;
+}
+
+.node-button:hover {
+    background-color: #374151;
+}
+
+.node-button.selected {
+    background-color: var(--color-indigo);
+    font-weight: 600;
+    box-shadow: 0 4px 10px rgba(79, 70, 229, 0.3);
+}
+
+.node-id {
+    font-size: 0.75rem;
+    font-family: monospace;
+    margin-right: 0.5rem;
+    color: var(--color-text-secondary);
+}
+
+/* Sidebar Controls */
+.sidebar-controls {
+    margin-top: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.btn-control {
+    width: 100%;
+    color: white;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    transition: background-color 150ms;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+}
+
+.btn-add {
+    background-color: var(--color-green);
+}
+
+.btn-add:hover {
+    background-color: #059669;
+}
+
+.btn-export {
+    background-color: var(--color-yellow);
+}
+
+.btn-export:hover {
+    background-color: #b45309;
+}
+
+.btn-toggle-view {
+    background-color: #3b82f6;
+}
+
+/* Blue */
+.btn-toggle-view:hover {
+    background-color: #2563eb;
+}
+
+/* --- Main Content (Editor/Graph) --- */
+.main-content {
+    flex-grow: 1;
+    padding: 2rem;
+    overflow-y: auto;
+}
+
+.editor-container {
+    background-color: var(--color-bg-secondary);
+    padding: 2rem;
+    border-radius: 0.75rem;
+    box-shadow: 0 10px 15px rgba(0, 0, 0, 0.3);
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.editor-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid var(--color-indigo);
+    padding-bottom: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.editor-header h2 {
+    margin: 0;
+    font-size: 2rem;
+    font-weight: 800;
+}
+
+.btn-delete-node {
+    background-color: var(--color-red);
+    color: white;
+    padding: 0.6rem;
+    border-radius: 9999px;
+    transition: background-color 150ms;
+    border: none;
+    cursor: pointer;
+}
+
+.btn-delete-node:hover {
+    background-color: #b91c1c;
+}
+
+/* Form Fields */
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.form-label {
+    color: var(--color-text-secondary);
+    font-size: 0.9rem;
+    display: block;
+}
+
+.form-input {
+    width: 100%;
+    background-color: var(--color-bg-tertiary);
+    color: var(--color-text-primary);
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    font-size: 1rem;
+    border: 1px solid transparent;
+    outline: none;
+}
+
+.form-input:focus {
+    border-color: var(--color-indigo);
+}
+
+.node-id-display {
+    background-color: #0f172a;
+    color: var(--color-green);
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    font-family: monospace;
+    font-size: 1rem;
+}
+
+.content-textarea {
+    width: 100%;
+    min-height: 10rem;
+    background-color: var(--color-bg-tertiary);
+    color: var(--color-text-primary);
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    font-weight: 300;
+    resize: vertical;
+    font-size: 1rem;
+}
+
+/* Choices and Adjustments */
+.choices-section {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--color-text-primary);
+    display: block;
+    padding-top: 1rem;
+    border-top: 1px solid #374151;
+}
+
+.choice-card {
+    background-color: #1a2434;
+    /* Slightly different shade */
+    padding: 1rem;
+    border-radius: 0.75rem;
+    border: 1px solid #334155;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    margin-bottom: 0.75rem;
+}
+
+.choice-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.choice-header:hover {
+    color: var(--color-indigo);
+}
+
+.adj-editor {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    background-color: #2d3748;
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+}
+
+.adj-select,
+.adj-input {
+    background-color: var(--color-bg-tertiary);
+    color: white;
+    padding: 0.4rem;
+    border-radius: 0.375rem;
+    font-size: 0.85rem;
+    border: none;
+    outline: none;
+}
+
+.adj-input {
+    width: 4rem;
+}
+
+.adj-select:focus,
+.adj-input:focus {
+    border-color: var(--color-indigo);
+}
+
+.next-node-selector {
+    width: 100%;
+    background-color: var(--color-indigo-dark);
+    color: white;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    font-weight: 700;
+    border: none;
+    outline: none;
+}
+
+/* --- Graph View Styles (Minimal for now) --- */
+.main-content.graph-view {
+    padding: 0;
+    overflow: hidden;
+}
+
+.graph-viewer {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    overflow: auto;
+}
+
+.graph-viewer-svg {
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+/* Node styles will be defined inline or imported from React Flow */
+/* But for our custom SVG mock: */
+.svg-node {
+    border: 2px solid var(--color-indigo);
+    background-color: #1f2937;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.svg-node.deadend {
+    border-color: var(--color-red);
+    background-color: #451a1a;
+}
+
+.svg-node.orphan {
+    border-color: var(--color-yellow);
+    background-color: #4a3a16;
+}
