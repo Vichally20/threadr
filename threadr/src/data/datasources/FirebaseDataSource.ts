@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, doc, setDoc, getDocs, deleteDoc } from 'firebase/firestore';
-import { type StoryNode } from '../../domain/entities/story';
+import { getFirestore, collection, doc, setDoc, getDocs, deleteDoc, getDoc } from 'firebase/firestore';
+import { type StoryNode, type CustomStat } from '../../domain/entities/story';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_API_KEY,
@@ -19,6 +19,12 @@ const db = getFirestore(app);
 // Defines the collection structure: stories/{storyId}/nodes/{nodeId}
 const getCollectionRef = (storyId: string) => 
   collection(db, `stories/${storyId}/nodes`);
+
+// Defines the configuration document path for global settings (like stats)
+const CONFIG_DOC_ID = 'config';
+
+const getStatDocRef = (storyId: string) =>
+  doc(db, `stories/${storyId}/config`, CONFIG_DOC_ID); // Using a subcollection 'config' for better structure
 
 export const FirebaseDataSource = {
   /**
@@ -72,5 +78,35 @@ export const FirebaseDataSource = {
    */
   async saveBulkNodes(storyId: string, nodes: StoryNode[]): Promise<void> {
     await Promise.all(nodes.map(node => this.saveNode(storyId, node)));
+  },
+   /**
+   * Fetches the stat configuration document.
+   */
+  async fetchStatConfig(storyId: string): Promise<CustomStat[]> {
+    try {
+      const docRef = getStatDocRef(storyId);
+      const docSnap = await getDoc(docRef);
+
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        // The stats are stored as an array under the 'stats' field
+        return data.stats || [];
+      }
+      return [];
+    } catch (e) {
+      console.error("Error fetching stat config:", e);
+      throw new Error("Failed to load stat configuration from Firestore.");
+    }
+  },
+
+  async saveStatConfig(storyId: string, stats: CustomStat[]): Promise<void> {
+    try {
+      const docRef = getStatDocRef(storyId);
+      // We save the entire array inside a field named 'stats'
+      await setDoc(docRef, { stats: stats }, { merge: true });
+    } catch (e) {
+      console.error("Error saving stat config:", e);
+      throw new Error("Failed to save stat configuration to Firestore.");
+    }
   }
 };

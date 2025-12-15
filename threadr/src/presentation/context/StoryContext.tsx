@@ -1,5 +1,5 @@
 import React, { createContext, useReducer, useContext, useMemo, useEffect } from 'react';
-import { type StoryNode } from '../../domain/entities/story';
+import { ALL_STATS, type CustomStat, type StoryNode } from '../../domain/entities/story';
 import { StoryRepositoryImpl } from '../../data/repositories/StoryRepositoryImpl';
 import { generateId } from '../../utils/id_generator';
 // --- Import Use Cases ---
@@ -14,7 +14,7 @@ import { useCallback } from 'react';
 const newEmptyNode = (id: string): StoryNode => ({
     id: id,
     title: "New Scene Title",
-    content: "Write the descriptive Markdown text for the scene here.",
+    content: "Write the descriptive  text for the scene here.",
     choices: [],
 });
 
@@ -27,6 +27,7 @@ const initialNodes: StoryNode[] = [
 export interface StoryState {
     nodes: StoryNode[];
     selectedNodeId: string | null;
+    customStats: CustomStat[];
     isLoading: boolean;
     error: string | null;
     graphIssues: GraphIssue[];
@@ -35,6 +36,7 @@ export interface StoryState {
 const initialState: StoryState = {
     nodes: initialNodes,
     selectedNodeId: initialNodes[0].id,
+    customStats: ALL_STATS,
     isLoading: false,
     error: null,
     graphIssues: [],
@@ -49,7 +51,11 @@ type StoryAction =
     | { type: 'UPDATE_NODE_SYNC'; payload: StoryNode }
     | { type: 'ADD_NODE_SYNC'; payload: StoryNode }
     | { type: 'DELETE_NODE_SYNC'; payload: string }
-    | { type: 'SET_GRAPH_ISSUES'; payload: GraphIssue[] };
+    | { type: 'SET_GRAPH_ISSUES'; payload: GraphIssue[] }
+    | { type: 'SET_CUSTOM_STATS'; payload: CustomStat[] }
+    | { type: 'ADD_STAT_SYNC'; payload: CustomStat }
+    | { type: 'DELETE_STAT_SYNC'; payload: string };
+
 
 const storyReducer = (state: StoryState, action: StoryAction): StoryState => {
     switch (action.type) {
@@ -84,6 +90,15 @@ const storyReducer = (state: StoryState, action: StoryAction): StoryState => {
                 nodes: remainingNodes,
                 selectedNodeId: state.selectedNodeId === action.payload ? remainingNodes[0].id : state.selectedNodeId,
             };
+        case 'ADD_STAT_SYNC': // NEW STAT
+            // Prevent duplicates
+            if (state.customStats.some(s => s.name === action.payload.name)) return state;
+            return { ...state, customStats: [...state.customStats, action.payload] };
+        case 'DELETE_STAT_SYNC': // NEW STAT
+            return {
+                ...state,
+                customStats: state.customStats.filter(s => s.name !== action.payload)
+            };
         default:
             return state;
     }
@@ -100,11 +115,15 @@ export interface StoryContextType {
     addNode: (parentId: string | null) => Promise<void>;
     deleteNode: (nodeId: string) => Promise<void>;
     selectNode: (nodeId: string) => void;
+    addCustomStat: (stat: CustomStat) => Promise<void>;
+    deleteCustomStat: (name: string) => Promise<void>;
     // Synchronous Update for quick UI feedback
     updateNodeSync: (node: StoryNode) => void;
     // Getters
     selectedNode: StoryNode | undefined;
     graphIssues: GraphIssue[];
+    allStatNames: string[];
+    //customStats: CustomStat[];
 }
 
 
@@ -115,10 +134,13 @@ export const StoryContext = createContext<StoryContextType>({
     saveNode: () => Promise.resolve(),
     addNode: () => Promise.resolve(),
     deleteNode: () => Promise.resolve(),
+    addCustomStat: () => Promise.resolve(),
+    deleteCustomStat: () => Promise.resolve(),
     selectNode: () => null,
     updateNodeSync: () => null,
     selectedNode: initialState.nodes[0],
     graphIssues: initialState.graphIssues,
+    allStatNames: ALL_STATS.map(s => s.name),
 });
 
 
@@ -131,6 +153,7 @@ export const StoryProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const saveNodeUseCase = useMemo(() => new SaveNodeUseCase(repo), [repo]);
     const deleteNodeUseCase = useMemo(() => new DeleteNodeUseCase(repo), [repo]);
     const analyzeGraphUseCase = useMemo(() => new AnalyzeGraphUseCase(), []);
+    const allStatNames = useMemo(() => state.customStats.map(s => s.name), [state.customStats]);
 
 
     // --- 2. ASYNC FUNCTIONS (Actions) ---
@@ -147,6 +170,7 @@ export const StoryProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                 await repo.saveAllNodes(initialNodes);
                 dispatch({ type: 'SET_NODES', payload: initialNodes });
             }
+            dispatch({ type: 'SET_CUSTOM_STATS', payload: ALL_STATS });
             dispatch({ type: 'SET_ERROR', payload: null });
         } catch (e) {
             console.error("Load Error:", e);
@@ -168,6 +192,29 @@ export const StoryProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             // NOTE: In a real app, you would revert the UI change here (pessimistic update).
         }
     }, [saveNodeUseCase]);
+
+    const saveStatConfig = useCallback(async (stats: CustomStat[]) => {
+        try {
+            await repo.saveStatConfig(stats);
+            dispatch({ type: 'SET_ERROR', payload: null });
+        } catch (e) {
+            console.error("Stat Config Save Error:", e);
+            dispatch({ type: 'SET_ERROR', payload: "Failed to save stat configuration." });
+        }
+    }, [repo]);
+
+    const addCustomStat = useCallback(async (stat: CustomStat) => {
+        dispatch({ type: 'ADD_STAT_SYNC', payload: stat });
+        // NOTE: In a real app, this would be followed by await repo.saveStatConfig(state.customStats);
+        // For now, it's just a UI update.
+    }, []);
+
+    const deleteCustomStat = useCallback(async (name: string) => {
+        dispatch({ type: 'DELETE_STAT_SYNC', payload: name });
+        // NOTE: In a real app, this would be followed by await repo.saveStatConfig(state.customStats);
+        const updatedStats = state.customStats.filter(s => s.name !== name);
+        await saveStatConfig(updatedStats);
+    }, [state.customStats, saveStatConfig]);
 
     const addNode = useCallback(async (parentId: string | null) => {
         const newNode = newEmptyNode(generateId('node'));
@@ -244,8 +291,11 @@ export const StoryProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         deleteNode,
         selectNode,
         updateNodeSync,
+        addCustomStat,
+        deleteCustomStat,
         selectedNode,
         graphIssues: state.graphIssues,
+        allStatNames: allStatNames,
     }), [
         state,
         loadStory,
@@ -256,6 +306,9 @@ export const StoryProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         updateNodeSync,
         selectedNode,
         state.graphIssues,
+        allStatNames,
+        addCustomStat,
+        deleteCustomStat,
     ]);
 
     return (

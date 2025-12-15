@@ -1,4 +1,4 @@
-import { type StoryNode } from '../../domain/entities/story';
+import { type CustomStat, type StoryNode } from '../../domain/entities/story';
 import { FirebaseDataSource } from '../datasources/FirebaseDataSource';
 import type { IStoryRepository } from '../../domain/repositories/IStoryRepository';
 
@@ -39,5 +39,12 @@ export class StoryRepositoryImpl implements IStoryRepository {
   // Retain saveAllNodes for initialization/bulk operations
   async saveAllNodes(nodes: StoryNode[]): Promise<void> {
     return FirebaseDataSource.saveBulkNodes(this.storyId, nodes);
+  }
+  async loadStatConfig(): Promise<CustomStat[]> {
+    return FirebaseDataSource.fetchStatConfig(this.storyId);
+  }
+
+  async saveStatConfig(stats: CustomStat[]): Promise<void> {
+    return FirebaseDataSource.saveStatConfig(this.storyId, stats);
   }
 }

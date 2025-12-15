@@ -1,6 +1,7 @@
 import React, { useCallback } from 'react';
 import { Trash2 } from 'lucide-react';
-import { type StatAdjustment, ALL_STATS } from '../../domain/entities/story';
+import { type StatAdjustment } from '../../domain/entities/story';
+import { useStory } from '../context/StoryContext'; // Import useStory
 
 interface StatAdjustmentEditorProps {
     adjustment: StatAdjustment;
@@ -11,7 +12,7 @@ interface StatAdjustmentEditorProps {
 
 /**
  * Component for editing a single stat adjustment within a choice.
- * Allows selecting the stat name and defining the value change.
+ * Dynamically loads the list of available stats from the context.
  */
 export const StatAdjustmentEditor: React.FC<StatAdjustmentEditorProps> = ({
     adjustment,
@@ -19,6 +20,8 @@ export const StatAdjustmentEditor: React.FC<StatAdjustmentEditorProps> = ({
     onUpdate,
     onDelete
 }) => {
+    const { allStatNames } = useStory(); // Get dynamic stat names
+
     const handleChange = useCallback((e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>) => {
         const { name, value } = e.target;
 
@@ -38,11 +41,18 @@ export const StatAdjustmentEditor: React.FC<StatAdjustmentEditorProps> = ({
                 value={adjustment.statName}
                 onChange={handleChange}
             >
-                {ALL_STATS.map(stat => (
+                {/* Render dynamic stat names */}
+                {allStatNames.map(stat => (
                     <option key={stat} value={stat}>
                         {stat.charAt(0).toUpperCase() + stat.slice(1)}
                     </option>
                 ))}
+                {/* If the stat name currently used in the adjustment doesn't exist anymore, display it as an invalid option */}
+                {!allStatNames.includes(adjustment.statName) && (
+                    <option key={adjustment.statName} value={adjustment.statName} style={{ color: 'red' }}>
+                        {adjustment.statName} (MISSING!)
+                    </option>
+                )}
             </select>
             <input
                 type="number"

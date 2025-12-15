@@ -1,4 +1,4 @@
-import { type StoryNode } from '../entities/story';
+import { type StoryNode, type CustomStat} from '../entities/story';
 
 /**
  * The contract for all story data persistence operations.
@@ -30,4 +30,15 @@ export interface IStoryRepository {
    * Saves the entire list of nodes atomically (useful for bulk operations).
    */
   saveAllNodes(nodes: StoryNode[]): Promise<void>;
+
+  /**
+ * Loads the current list of CustomStat definitions from the database.
+ */
+  loadStatConfig(): Promise<CustomStat[]>;
+
+  /**
+   * Saves the current list of CustomStat definitions to the database.
+   */
+  saveStatConfig(stats: CustomStat[]): Promise<void>;
+
 }
