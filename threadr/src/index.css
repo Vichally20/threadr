@@ -1,11 +1,41 @@
-/* :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+:root {
+  --font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  --line-height: 1.5;
+  --font-weight: 400;
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+  /* Theme Colors (Modern Dark/Light Mix) */
+  --color-bg-body: #f3f4f6;
+  /* Light gray background for main area */
+  --color-bg-sidebar: #27272a;
+  /* Lighter dark sidebar (Zinc-800) */
+  --color-bg-card: #ffffff;
+  /* White cards */
+
+  /* Input/Component Backgrounds (Light Default) */
+  --color-bg-input: #f9fafb;
+  --color-bg-element: #f3f4f6;
+
+  --color-text-main: #111827;
+  /* Dark text for main area */
+  --color-text-muted: #6b7280;
+  --color-text-sidebar: #e2e8f0;
+  /* Light text for sidebar */
+  --color-text-sidebar-muted: #94a3b8;
+
+  --color-primary: #6366f1;
+  /* Indigo/Purple primary */
+  --color-primary-hover: #4f46e5;
+  --color-accent: #10b981;
+  /* Emerald Green */
+  --color-danger: #ef4444;
+  /* Red */
+
+  --color-border: #e5e7eb;
+  --color-border-dark: #334155;
+
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -13,56 +43,50 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
+[data-theme='dark'] {
+  --color-bg-body: #111827;
+  /* Dark gray background */
+  --color-bg-card: #1f2937;
+  /* Darker card background */
+
+  /* Dark Input/Element Colors */
+  --color-bg-input: #374151;
+  /* Dark gray input bg */
+  --color-bg-element: #1f2937;
+  /* darker element bg */
+
+  --color-text-main: #f9fafb;
+  /* Light text */
+  --color-text-muted: #9ca3af;
+  --color-border: #374151;
+
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.5);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.5);
 }
 
 body {
   margin: 0;
   display: flex;
-  place-items: center;
   min-width: 320px;
   min-height: 100vh;
+  font-family: var(--font-family);
+  background-color: var(--color-bg-body);
+  color: var(--color-text-main);
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  margin: 0;
+  font-weight: 600;
 }
 
 button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
   cursor: pointer;
-  transition: border-color 0.25s;
+  border: none;
+  outline: none;
+  font-family: inherit;
 }
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
-} */

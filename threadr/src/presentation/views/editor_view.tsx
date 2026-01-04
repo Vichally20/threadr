@@ -1,22 +1,24 @@
-import React, { useState, useCallback } from 'react';
-import { LayoutGrid, FileText, Zap, X, Plus, Save, Users } from 'lucide-react';
+import React, { useState } from 'react';
+import { LayoutGrid, AlertCircle, Plus, Save, Users, Zap, FileText, Sun, Moon } from 'lucide-react';
 import { useStory } from '../context/StoryContext';
+import { useTheme } from '../context/ThemeContext';
 import { NodeEditor } from '../components/node_editor';
-import { GraphVisualizationWrapper } from '../components/graph_visual'; // UPDATED IMPORT
-import { StatUtilityView } from './stat_view'; // NEW IMPORT
+import { GraphVisualizationWrapper } from '../components/graph_visual';
+import { StatUtilityView } from './stat_view';
 
 /**
- * The main application view component. Handles the sidebar layout and switches 
- * between the Node Editor and the Graph Visualization based on the view mode.
+ * The main application view component.
+ * Refactored to match the "Modern Node Editor" dark sidebar / light content layout.
  */
 export const EditorView: React.FC = () => {
     const { state, selectNode, addNode, graphIssues } = useStory();
-    const [viewMode, setViewMode] = useState<'editor' | 'graph' | 'stats'>('editor'); // ADDED 'stats' mode
+    const { theme, toggleTheme } = useTheme();
+    const [viewMode, setViewMode] = useState<'editor' | 'graph' | 'stats'>('editor');
 
     const allNodeIds = state.nodes.map(n => n.id);
     const selectedNode = state.nodes.find(n => n.id === state.selectedNodeId);
 
-    // --- Sidebar Helpers ---
+    // --- Actions ---
 
     const handleNodeClick = (id: string) => {
         selectNode(id);
@@ -33,39 +35,47 @@ export const EditorView: React.FC = () => {
             alert(`Cannot export: Please fix ${graphIssues.length} graph issues (Orphans, Dead Ends, Invalid Links).`);
             return;
         }
-
         try {
             const jsonString = JSON.stringify(state.nodes, null, 2);
-            // Use document.execCommand('copy') for broader clipboard compatibility in iframe environments
             navigator.clipboard.writeText(jsonString).then(() => {
                 alert("Story JSON copied to clipboard successfully!");
             }).catch(err => {
-                alert("Failed to copy JSON to clipboard.");
                 console.error(err);
+                alert("Failed to copy JSON to clipboard.");
             });
         } catch (e) {
-            alert("Error exporting JSON.");
             console.error(e);
+            alert("Error exporting JSON.");
         }
     };
 
-    // --- Dynamic Main Content Render ---
+    // --- Render Helpers ---
+
     const renderMainContent = () => {
         if (state.isLoading) {
             return (
-                <div style={{ padding: '2rem', textAlign: 'center' }}>
-                    <h3 style={{ color: 'var(--color-text-secondary)' }}>Loading story from Firebase...</h3>
+                <div className="flex items-center justify-center h-full">
+                    <h3 className="card-subtitle">Loading story from Firebase...</h3>
                 </div>
             );
         }
 
         switch (viewMode) {
             case 'editor':
-                if (!selectedNode) return (
-                    <div style={{ padding: '2rem', textAlign: 'center' }}>
-                        <h3 style={{ color: 'var(--color-text-secondary)' }}>Select a node or start a new project.</h3>
-                    </div>
-                );
+                if (!selectedNode) {
+                    return (
+                        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+                            <div className="editor-card" style={{ maxWidth: 400, textAlign: 'center' }}>
+                                <Zap size={48} style={{ color: 'var(--color-primary)', margin: '0 auto 1rem' }} />
+                                <h2>Welcome to Threadr</h2>
+                                <p className="card-subtitle">Select a node from the sidebar or create a new one to get started.</p>
+                                <button onClick={handleNodeAdd} className="btn btn-primary" style={{ marginTop: '1.5rem', width: '100%' }}>
+                                    <Plus size={18} /> Create First Node
+                                </button>
+                            </div>
+                        </div>
+                    );
+                }
                 return <NodeEditor node={selectedNode} nodeIds={allNodeIds} />;
             case 'graph':
                 return <GraphVisualizationWrapper storyNodes={state.nodes} />;
@@ -76,276 +86,99 @@ export const EditorView: React.FC = () => {
         }
     };
 
-
-    // --- Render ---
-
     return (
-        <div className="app-container">
-            {/* 1. Left Sidebar: Node List and Controls */}
-            <div className="sidebar">
-                <h1 className="sidebar-header">
-                    <Zap size={24} />
-                    <span>Threadr Editor</span>
-                </h1>
-
-                {state.error && (
-                    <div className="sidebar-error">
-                        <X size={16} />
-                        <span>{state.error}</span>
+        <div className="app-layout">
+            {/* Sidebar */}
+            <aside className="sidebar">
+                <div className="sidebar-header">
+                    <div style={{ background: 'rgba(99, 102, 241, 0.2)', padding: '0.25rem', borderRadius: '0.25rem' }}>
+                        <Zap size={20} color="#818cf8" />
                     </div>
-                )}
-
-                {/* Navigation Buttons (Switches Main View) */}
-                <div className="sidebar-controls" style={{ marginBottom: '1rem' }}>
-                    <button
-                        onClick={() => setViewMode(viewMode === 'graph' ? 'editor' : 'graph')}
-                        className={`btn-control ${viewMode === 'graph' ? 'btn-toggle-view selected' : 'btn-control'}`}
-                        style={{ backgroundColor: viewMode === 'graph' ? 'var(--color-indigo)' : '#3b82f6' }}
-                    >
-                        <LayoutGrid size={20} />
-                        <span>{viewMode === 'graph' ? 'Back to Editor' : 'View Graph'}</span>
-                    </button>
-                    <button
-                        onClick={() => setViewMode(viewMode === 'stats' ? 'editor' : 'stats')}
-                        className={`btn-control ${viewMode === 'stats' ? 'selected' : ''}`}
-                        style={{ backgroundColor: viewMode === 'stats' ? 'var(--color-indigo)' : '#3b82f6' }}
-                    >
-                        <Users size={20} />
-                        <span>Manage Stats & Utils</span>
-                    </button>
+                    <span>Threadr Editor</span>
                 </div>
 
+                <div className="sidebar-content">
+                    {/* Node List */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', paddingLeft: '0.5rem', paddingRight: '0.5rem' }}>
+                        <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                            Story Nodes ({state.nodes.length})
+                        </span>
+                    </div>
 
-                {/* Node List */}
-                <h3 style={{ fontSize: '1rem', fontWeight: 600, color: 'white', borderBottom: '1px solid #374151', paddingBottom: '0.5rem', marginBottom: '0.5rem' }}>Story Nodes</h3>
-                <div className="node-list">
-                    {state.nodes.map(node => (
-                        <button
-                            key={node.id}
-                            onClick={() => handleNodeClick(node.id)}
-                            className={`node-button ${node.id === state.selectedNodeId && viewMode === 'editor' ? 'selected' : ''
-                                }`}
-                        >
-                            <span className="node-id">[{node.id}]</span>
-                            {node.title}
-                        </button>
-                    ))}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                        {state.nodes.map(node => (
+                            <button
+                                key={node.id}
+                                onClick={() => handleNodeClick(node.id)}
+                                className={`node-item ${node.id === state.selectedNodeId && viewMode === 'editor' ? 'active' : ''}`}
+                            >
+                                <span className="node-item-id">{node.id}</span>
+                                <span style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                    {node.title || "Untitled Scene"}
+                                </span>
+                            </button>
+                        ))}
+                    </div>
                 </div>
 
-                {/* Export Controls */}
-                <div className="sidebar-controls" style={{ marginTop: '1rem' }}>
-                    <button
-                        onClick={handleNodeAdd}
-                        className="btn-control btn-add"
-                        title="Add new Node and try to link it to the selected one."
-                    >
-                        <Plus size={20} />
-                        <span>Add New Node</span>
-                    </button>
-                    <button
-                        onClick={handleExport}
-                        className="btn-control btn-export"
-                        disabled={graphIssues.length > 0}
-                    >
-                        <Save size={20} />
-                        <span>Export Story JSON</span>
-                    </button>
-                    {graphIssues.length > 0 && (
-                        <div style={{ color: 'var(--color-red)', fontSize: '0.8rem', textAlign: 'center', marginTop: '0.5rem' }}>
-                            Fix {graphIssues.length} issues before exporting.
+                <div className="sidebar-footer">
+                    {state.error && (
+                        <div style={{ background: '#450a0a', color: '#fca5a5', padding: '0.75rem', borderRadius: '0.5rem', fontSize: '0.85rem', marginBottom: '0.5rem', display: 'flex', gap: '0.5rem' }}>
+                            <AlertCircle size={16} />
+                            <span>{state.error}</span>
                         </div>
                     )}
-                </div>
-            </div>
 
-            {/* 2. Main Content: Renders based on ViewMode */}
-            <div className={`main-content ${viewMode === 'graph' ? 'graph-view' : ''}`}>
+                    <button
+                        onClick={handleNodeAdd}
+                        className="btn btn-primary btn-full"
+                    >
+                        <Plus size={18} /> Add New Node
+                    </button>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginTop: '0.5rem' }}>
+                        <button
+                            onClick={() => setViewMode(viewMode === 'graph' ? 'editor' : 'graph')}
+                            className={`btn ${viewMode === 'graph' ? 'btn-primary' : 'btn-ghost'}`}
+                            style={{ justifyContent: 'center', fontSize: '0.85rem' }}
+                        >
+                            {viewMode === 'graph' ? <FileText size={16} /> : <LayoutGrid size={16} />}
+                            {viewMode === 'graph' ? 'Editor' : 'Graph'}
+                        </button>
+                        <button
+                            onClick={() => setViewMode(viewMode === 'stats' ? 'editor' : 'stats')}
+                            className={`btn ${viewMode === 'stats' ? 'btn-primary' : 'btn-ghost'}`}
+                            style={{ justifyContent: 'center', fontSize: '0.85rem' }}
+                        >
+                            <Users size={16} /> Stats
+                        </button>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+                        <button
+                            onClick={handleExport}
+                            disabled={graphIssues.length > 0}
+                            className="btn btn-ghost"
+                            style={{ flex: 1, fontSize: '0.85rem', opacity: 0.7 }}
+                        >
+                            <Save size={16} /> Export
+                        </button>
+                        <button
+                            onClick={toggleTheme}
+                            className="btn btn-ghost"
+                            style={{ opacity: 0.7 }}
+                            title={theme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode'}
+                        >
+                            {theme === 'light' ? <Moon size={16} /> : <Sun size={16} />}
+                        </button>
+                    </div>
+                </div>
+            </aside>
+
+            {/* Main Content */}
+            <main className={`main-content ${viewMode === 'graph' ? 'graph-view' : ''}`}>
                 {renderMainContent()}
-            </div>
+            </main>
         </div>
     );
 };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// import React, { useState, useCallback } from 'react';
-// import { LayoutGrid, FileText, Zap, X, Plus, Save } from 'lucide-react';
-// import { useStory } from '../context/StoryContext';
-// import { NodeEditor } from '../components/node_editor';
-// import { GraphVisualizationWrapper } from '../components/graph_visual'; // UPDATED IMPORT
-// import { StatUtilityView } from './stat_view';
-
-// /**
-//  * The main application view component. Handles the sidebar layout and switches
-//  * between the Node Editor and the Graph Visualization based on the view mode.
-//  */
-// export const EditorView: React.FC = () => {
-//     const { state, selectNode, addNode, graphIssues } = useStory();
-//     const [viewMode, setViewMode] = useState<'editor' | 'graph' | 'stat'>('editor');
-
-//     const allNodeIds = state.nodes.map(n => n.id);
-//     const selectedNode = state.nodes.find(n => n.id === state.selectedNodeId);
-
-//     // --- Sidebar Helpers ---
-
-//     const handleNodeClick = (id: string) => {
-//         selectNode(id);
-//         setViewMode('editor');
-//     };
-
-//     const handleNodeAdd = () => {
-//         addNode(state.selectedNodeId);
-//         setViewMode('editor');
-//     };
-
-//     const handleExport = () => {
-//         if (graphIssues.length > 0) {
-//             alert(`Cannot export: Please fix ${graphIssues.length} graph issues (Orphans, Dead Ends, Invalid Links).`);
-//             return;
-//         }
-
-//         try {
-//             const jsonString = JSON.stringify(state.nodes, null, 2);
-//             // Use document.execCommand('copy') for broader clipboard compatibility in iframe environments
-//             navigator.clipboard.writeText(jsonString).then(() => {
-//                 alert("Story JSON copied to clipboard successfully!");
-//             }).catch(err => {
-//                 alert("Failed to copy JSON to clipboard.");
-//                 console.error(err);
-//             });
-//         } catch (e) {
-//             alert("Error exporting JSON.");
-//             console.error(e);
-//         }
-//     };
-
-
-//     // --- Render ---
-
-//     return (
-//         <div className="app-container">
-//             {/* 1. Left Sidebar: Node List and Controls */}
-//             <div className="sidebar">
-//                 <h1 className="sidebar-header">
-//                     <Zap size={24} />
-//                     <span>Threadr Editor</span>
-//                 </h1>
-
-//                 {state.error && (
-//                     <div className="sidebar-error">
-//                         <X size={16} />
-//                         <span>{state.error}</span>
-//                     </div>
-//                 )}
-
-//                 {/* Node List */}
-//                 <div className="node-list">
-//                     {state.nodes.map(node => (
-//                         <button
-//                             key={node.id}
-//                             onClick={() => handleNodeClick(node.id)}
-//                             className={`node-button ${node.id === state.selectedNodeId && viewMode === 'editor' ? 'selected' : ''
-//                                 }`}
-//                         >
-//                             <span className="node-id">[{node.id}]</span>
-//                             {node.title}
-//                         </button>
-//                     ))}
-//                 </div>
-
-//                 {/* Controls */}
-//                 <div className="sidebar-controls">
-//                     <button
-//                         onClick={() => setViewMode(viewMode === 'editor' ? 'graph' : 'editor')}
-//                         className="btn-control btn-toggle-view"
-//                     >
-//                         {viewMode === 'editor' ? <LayoutGrid size={20} /> : <FileText size={20} />}
-//                         <span>{viewMode === 'editor' ? 'View Graph' : 'Back to Editor'}</span>
-//                     </button>
-//                     <button
-//                         onClick={handleNodeAdd}
-//                         className="btn-control btn-add"
-//                         title="Add new Node and try to link it to the selected one."
-//                     >
-//                         <Plus size={20} />
-//                         <span>Add New Node</span>
-//                     </button>
-//                     <button
-//                         onClick={handleExport}
-//                         className="btn-control btn-export"
-//                         disabled={graphIssues.length > 0}
-//                     >
-//                         <Save size={20} />
-//                         <span>Export Story JSON</span>
-//                     </button>
-//                     {graphIssues.length > 0 && (
-//                         <div style={{ color: 'var(--color-red)', fontSize: '0.8rem', textAlign: 'center' }}>
-//                             Fix {graphIssues.length} issues before exporting.
-//                         </div>
-//                     )}
-//                 </div>
-//             </div>
-
-//             {/* 2. Main Content: Editor or Graph */}
-//             <div className={`main-content ${viewMode === 'graph' ? 'graph-view' : ''}`}>
-//                 {state.isLoading ? (
-//                     <div style={{ padding: '2rem', textAlign: 'center' }}>
-//                         <h3 style={{ color: 'var(--color-text-secondary)' }}>Loading story from Firebase...</h3>
-//                     </div>
-//                 ) : viewMode === 'editor' && selectedNode ? (
-//                     <NodeEditor
-//                         node={selectedNode}
-//                         nodeIds={allNodeIds}
-//                     />
-//                 ) : viewMode === 'graph' ? (
-//                     <GraphVisualizationWrapper storyNodes={state.nodes} />
-//                 ) : (
-//                     <div style={{ padding: '2rem', textAlign: 'center' }}>
-//                         <h3 style={{ color: 'var(--color-text-secondary)' }}>Select a node or start a new project.</h3>
-//                     </div>
-//                 )}
-//             </div>
-//         </div>
-//     );
-// };
-
-
-
-

@@ -1,10 +1,11 @@
 import React, { useState, useCallback } from 'react';
 import { useStory } from '../context/StoryContext';
-import { Trash2, Plus, Users, Zap } from 'lucide-react';
+import { Trash2, Plus, Users, Zap, AlertCircle } from 'lucide-react';
 import { type CustomStat } from '../../domain/entities/story';
 
 /**
  * View for managing customizable character stats and other project utilities.
+ * Refactored to match the modern application UI.
  */
 export const StatUtilityView: React.FC = () => {
     const { state, addCustomStat, deleteCustomStat } = useStory();
@@ -48,64 +49,73 @@ export const StatUtilityView: React.FC = () => {
     const secondaryStats = state.customStats.filter(s => s.type === 'Secondary');
 
     return (
-        <div className="main-content">
-            <div className="editor-container" style={{ maxWidth: '900px', margin: '0 auto' }}>
-                <div className="editor-header">
-                    <h2 className="text-3xl">Stat Configuration & Utilities</h2>
+        <div style={{ width: '100%', maxWidth: '800px' }}>
+            <div className="editor-card">
+                <div className="card-header">
+                    <h2>Stat Configuration</h2>
+                    <p className="card-subtitle">Manage character stats and variables for your story.</p>
                 </div>
 
                 {/* Stat Creation Section */}
-                <div style={{ padding: '1.5rem', border: '1px solid #374151', borderRadius: '8px' }}>
-                    <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--color-green)', marginBottom: '1rem' }}>Add New Character Stat</h3>
+                <div style={{ backgroundColor: '#f9fafb', padding: '1.5rem', borderRadius: '0.75rem', border: '1px solid var(--color-border)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', color: 'var(--color-primary)', fontWeight: 600 }}>
+                        <Plus size={20} />
+                        <h3>Add New Stat</h3>
+                    </div>
 
-                    {error && <div className="sidebar-error" style={{ marginBottom: '1rem' }}>{error}</div>}
+                    {error && (
+                        <div style={{
+                            backgroundColor: '#fee2e2', color: '#991b1b', padding: '0.75rem',
+                            borderRadius: '0.5rem', fontSize: '0.9rem', marginBottom: '1rem',
+                            display: 'flex', alignItems: 'center', gap: '0.5rem'
+                        }}>
+                            <AlertCircle size={16} />
+                            {error}
+                        </div>
+                    )}
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: '1rem', alignItems: 'flex-end' }}>
-                        <div className="form-group">
-                            <label className="form-label">Stat Name (slug)</label>
+                    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr auto', gap: '1rem', alignItems: 'end' }}>
+                        <div className="input-group">
+                            <label className="input-label">Stat Name (ID)</label>
                             <input
                                 type="text"
-                                className="form-input"
-                                placeholder="e.g., courage, charisma"
+                                className="text-input"
+                                placeholder="e.g. courage"
                                 value={newStatName}
                                 onChange={(e) => setNewStatName(e.target.value)}
                             />
                         </div>
-                        <div className="form-group">
-                            <label className="form-label">Initial Value</label>
+                        <div className="input-group">
+                            <label className="input-label">Initial Value</label>
                             <input
                                 type="number"
-                                className="form-input"
+                                className="text-input"
                                 value={newStatInitialValue}
                                 onChange={(e) => setNewStatInitialValue(parseInt(e.target.value) || 0)}
                             />
                         </div>
-                        <div className="form-group">
-                            <label className="form-label">Category</label>
+                        <div className="input-group">
+                            <label className="input-label">Type</label>
                             <select
-                                className="form-input"
+                                className="text-input"
                                 value={newStatType}
                                 onChange={(e) => setNewStatType(e.target.value as 'Personality' | 'Secondary')}
                             >
                                 <option value="Personality">Personality</option>
-                                <option value="Secondary">Secondary (Skill/RPG)</option>
+                                <option value="Secondary">Secondary</option>
                             </select>
                         </div>
-                        <button onClick={handleAddStat} className="btn-control btn-add" style={{ width: '100px', height: '44px' }}>
-                            <Plus size={20} />
+                        <button onClick={handleAddStat} className="btn btn-primary" style={{ height: '42px', width: '42px', padding: 0 }}>
+                            <Plus size={24} />
                         </button>
                     </div>
                 </div>
 
-                {/* Display Current Stats */}
-                <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--color-indigo)', marginTop: '2rem', marginBottom: '1rem' }}>Current Defined Stats</h3>
-
-                {/* Personality Stats */}
-                <StatList title="Personality Attributes" stats={personalityStats} onDelete={handleStatDelete} />
-
-                {/* Secondary Stats */}
-                <StatList title="Secondary (Skill/RPG) Attributes" stats={secondaryStats} onDelete={handleStatDelete} />
-
+                <div style={{ marginTop: '1rem' }}>
+                    <StatList title="Personality Attributes" stats={personalityStats} onDelete={handleStatDelete} color="blue" />
+                    <div style={{ height: '1.5rem' }}></div>
+                    <StatList title="Secondary Attributes" stats={secondaryStats} onDelete={handleStatDelete} color="orange" />
+                </div>
             </div>
         </div>
     );
@@ -116,42 +126,62 @@ interface StatListProps {
     title: string;
     stats: CustomStat[];
     onDelete: (name: string) => void;
+    color: 'blue' | 'orange';
 }
 
-const StatList: React.FC<StatListProps> = ({ title, stats, onDelete }) => (
-    <div style={{ marginBottom: '1.5rem', padding: '1rem', backgroundColor: '#1f2937', borderRadius: '8px' }}>
-        <h4 style={{ color: 'var(--color-text-primary)', fontSize: '1.1rem', marginBottom: '0.75rem', borderBottom: '1px solid #374151', paddingBottom: '0.5rem' }}>{title}</h4>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '0.75rem' }}>
-            {stats.map(stat => (
-                <div
-                    key={stat.name}
-                    style={{
-                        backgroundColor: '#0f172a',
-                        padding: '0.75rem',
-                        borderRadius: '6px',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        borderLeft: `4px solid ${stat.type === 'Personality' ? '#3b82f6' : '#d97706'}`
-                    }}
-                >
-                    <div>
-                        <span style={{ fontSize: '1rem', fontWeight: 600, color: 'white' }}>
-                            {stat.name.charAt(0).toUpperCase() + stat.name.slice(1)}
-                        </span>
-                        <span style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginLeft: '8px' }}>
-                            (Initial: {stat.initialValue})
-                        </span>
-                    </div>
-                    <button
-                        onClick={() => onDelete(stat.name)}
-                        style={{ color: 'var(--color-red)', background: 'none', border: 'none', cursor: 'pointer', padding: '5px' }}
-                        title="Delete Stat"
+const StatList: React.FC<StatListProps> = ({ title, stats, onDelete, color }) => {
+    const accentColor = color === 'blue' ? '#3b82f6' : '#f59e0b';
+    const bgColor = color === 'blue' ? '#eff6ff' : '#fffbeb';
+    const borderColor = color === 'blue' ? '#dbeafe' : '#fef3c7';
+
+    if (stats.length === 0) return null;
+
+    return (
+        <div>
+            <div className="choices-header" style={{ marginBottom: '0.75rem', borderBottom: 'none', paddingBottom: 0 }}>
+                <span className="input-label" style={{ fontSize: '0.9rem' }}>{title}</span>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem' }}>
+                {stats.map(stat => (
+                    <div
+                        key={stat.name}
+                        style={{
+                            backgroundColor: 'white',
+                            border: `1px solid ${borderColor}`,
+                            borderRadius: '0.5rem',
+                            padding: '1rem',
+                            position: 'relative',
+                            boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '0.25rem'
+                        }}
                     >
-                        <Trash2 size={16} />
-                    </button>
-                </div>
-            ))}
+                        <div style={{
+                            position: 'absolute', left: 0, top: '10px', bottom: '10px', width: '4px',
+                            backgroundColor: accentColor, borderTopRightRadius: '4px', borderBottomRightRadius: '4px'
+                        }}></div>
+
+                        <div style={{ marginLeft: '0.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <span style={{ fontWeight: 600, color: 'var(--color-text-main)', textTransform: 'capitalize' }}>
+                                {stat.name}
+                            </span>
+                            <button
+                                onClick={() => onDelete(stat.name)}
+                                className="btn-ghost"
+                                style={{ color: 'var(--color-text-muted)', padding: '2px' }}
+                                title="Delete Stat"
+                            >
+                                <Trash2 size={14} />
+                            </button>
+                        </div>
+                        <div style={{ marginLeft: '0.5rem', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                            Initial Value: <span style={{ fontWeight: 500, color: 'var(--color-text-main)' }}>{stat.initialValue}</span>
+                        </div>
+                    </div>
+                ))}
+            </div>
         </div>
-    </div>
-);
+    );
+};

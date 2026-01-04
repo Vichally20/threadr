@@ -1,21 +1,17 @@
-import React, { useState, useCallback, useMemo } from 'react';
-import { ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react';
+import React, { useState, useCallback } from 'react';
+import { ChevronDown, ChevronUp, Plus, Trash2, GitBranch } from 'lucide-react';
 import { type GameChoice, type StatAdjustment } from '../../domain/entities/story';
+import { useStory } from '../context/StoryContext';
 import { StatAdjustmentEditor } from './stat_adjustment';
-//import { generateId } from '../../utils/id-generator';
-import { useStory } from '../context/StoryContext'; // Import useStory
 
 interface ChoiceEditorProps {
     choice: GameChoice;
     index: number;
-    nodeIds: string[]; // List of all possible target node IDs
+    nodeIds: string[];
     onUpdate: (index: number, newChoice: GameChoice) => void;
     onDelete: (index: number) => void;
 }
 
-/**
- * Component for editing a single GameChoice, including its adjustments.
- */
 export const ChoiceEditor: React.FC<ChoiceEditorProps> = ({
     choice,
     index,
@@ -23,25 +19,18 @@ export const ChoiceEditor: React.FC<ChoiceEditorProps> = ({
     onUpdate,
     onDelete
 }) => {
-    const [isExpanded, setIsExpanded] = useState(false);
-    const { allStatNames } = useStory(); // Get dynamic stat names
+    const [isExpanded, setIsExpanded] = useState(true); // Default to expanded for easier editing
+    const { allStatNames } = useStory();
 
-    // Factory function to create a new adjustment, defaulting statName to the first available stat
     const newEmptyAdjustment = useCallback((): StatAdjustment => ({
-        statName: allStatNames.length > 0 ? allStatNames[0] : "", // Use the first available stat
+        statName: allStatNames.length > 0 ? allStatNames[0] : "",
         value: 1,
     }), [allStatNames]);
-
-
-    // --- Handlers for Choice's Main Fields ---
 
     const handleChoiceFieldChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         onUpdate(index, { ...choice, [name]: value });
     }, [choice, index, onUpdate]);
-
-
-    // --- Handlers for Adjustments Array ---
 
     const handleAdjustmentUpdate = useCallback((adjIndex: number, newAdj: StatAdjustment) => {
         const updatedAdjustments = choice.adjustments.map((adj, i) => (i === adjIndex ? newAdj : adj));
@@ -57,208 +46,90 @@ export const ChoiceEditor: React.FC<ChoiceEditorProps> = ({
         onUpdate(index, { ...choice, adjustments: [...choice.adjustments, newEmptyAdjustment()] });
     }, [choice, index, onUpdate, newEmptyAdjustment]);
 
-
     return (
-        <div className="choice-card">
-            <div className="choice-header" onClick={() => setIsExpanded(!isExpanded)}>
-                <span className="choice-text" title={choice.text}>
-                    {choice.text || "New Choice"} ({choice.nextNodeId || "DEAD END"})
-                </span>
+        <div className="choice-item">
+            <div className="choice-summary" onClick={() => setIsExpanded(!isExpanded)}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <div style={{ background: '#eef2ff', padding: '0.35rem', borderRadius: '0.35rem', color: '#6366f1' }}>
+                        <GitBranch size={18} />
+                    </div>
+                    <div>
+                        <div className="choice-title">{choice.text || "Untitled Choice"}</div>
+                        <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>
+                            Target: <span className="choice-target">{choice.nextNodeId || "None"}</span>
+                        </div>
+                    </div>
+                </div>
+
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
                     <button
                         onClick={(e) => { e.stopPropagation(); onDelete(index); }}
-                        className="text-red-400 hover:text-red-500 transition duration-150"
+                        className="btn-ghost"
+                        style={{ color: 'var(--color-danger)', padding: '0.25rem' }}
                     >
-                        <Trash2 size={18} />
+                        <Trash2 size={16} />
                     </button>
-                    <button className="text-gray-400">
+                    <button className="btn-ghost" style={{ padding: '0.25rem' }}>
                         {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
                     </button>
                 </div>
             </div>
-            {isExpanded && (
-                <div className="adjustment-area">
-                    {/* Choice Text Input */}
-                    <input
-                        type="text"
-                        name="text"
-                        placeholder="Choice Text"
-                        className="form-input text-sm"
-                        style={{ padding: '0.5rem', fontSize: '0.875rem', marginBottom: '0.5rem' }}
-                        value={choice.text}
-                        onChange={handleChoiceFieldChange}
-                    />
-                    {/* Next Node Selector */}
-                    <select
-                        className="next-node-selector"
-                        name="nextNodeId"
-                        style={{ marginBottom: '0.5rem' }}
-                        value={choice.nextNodeId}
-                        onChange={handleChoiceFieldChange}
-                    >
-                        <option value="">-- Select Next Node ID (Required) --</option>
-                        {nodeIds.map(id => (
-                            <option key={id} value={id}>{id}</option>
-                        ))}
-                    </select>
 
-                    {/* Stat Adjustments */}
-                    <div className="form-label adj-label">Stat Adjustments:</div>
-                    <div className='adj-list'>
-                        {choice.adjustments.map((adj, adjIndex) => (
-                            <StatAdjustmentEditor
-                                key={adjIndex}
-                                adjustment={adj}
-                                index={adjIndex}
-                                onUpdate={handleAdjustmentUpdate}
-                                onDelete={handleAdjustmentDelete}
-                            />
-                        ))}
-                        <button onClick={handleAdjustmentAdd} className="btn-add-adjustment">
-                            <Plus size={16} /> Add Adjustment
-                        </button>
+            {isExpanded && (
+                <div style={{ marginTop: '1rem', borderTop: '1px solid var(--color-border)', paddingTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    <div className="input-group">
+                        <label className="input-label">Button Label</label>
+                        <input
+                            type="text"
+                            name="text"
+                            placeholder="e.g. Open the door"
+                            className="text-input"
+                            value={choice.text}
+                            onChange={handleChoiceFieldChange}
+                        />
+                    </div>
+
+                    <div className="input-group">
+                        <label className="input-label">Target Node</label>
+                        <select
+                            className="text-input"
+                            name="nextNodeId"
+                            value={choice.nextNodeId}
+                            onChange={handleChoiceFieldChange}
+                        >
+                            <option value="">-- Select Target --</option>
+                            {nodeIds.map(id => (
+                                <option key={id} value={id}>{id}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div className="input-group" style={{ marginTop: '0.25rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <label className="input-label">Requirements & Adjustments</label>
+                            <button onClick={handleAdjustmentAdd} style={{ fontSize: '0.75rem', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                <Plus size={14} /> Add Stats
+                            </button>
+                        </div>
+
+                        {choice.adjustments.length > 0 ? (
+                            <div className="adjustment-chips">
+                                {choice.adjustments.map((adj, adjIndex) => (
+                                    <StatAdjustmentEditor
+                                        key={adjIndex}
+                                        adjustment={adj}
+                                        index={adjIndex}
+                                        onUpdate={handleAdjustmentUpdate}
+                                        onDelete={handleAdjustmentDelete}
+                                    />
+                                ))}
+                            </div>
+                        ) : (
+                            <div style={{ fontSize: '0.85rem', color: '#9ca3af', fontStyle: 'italic' }}>No stat changes configured.</div>
+                        )}
                     </div>
                 </div>
             )}
         </div>
     );
 };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// import React, { useState, useCallback, useMemo } from 'react';
-// import { ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react';
-// import { type GameChoice, type StatAdjustment, type StoryNode, ALL_STATS } from '../../domain/entities/story';
-// import { StatAdjustmentEditor } from './stat_adjustment';
-// import { generateId } from '../../utils/id_generator';
-
-// interface ChoiceEditorProps {
-//     choice: GameChoice;
-//     index: number;
-//     nodeIds: string[]; // List of all possible target node IDs
-//     onUpdate: (index: number, newChoice: GameChoice) => void;
-//     onDelete: (index: number) => void;
-// }
-
-// const newEmptyAdjustment = (): StatAdjustment => ({
-//     statName: "",
-//     value: 1,
-// });
-
-// /**
-//  * Component for editing a single GameChoice, including its adjustments.
-//  */
-// export const ChoiceEditor: React.FC<ChoiceEditorProps> = ({
-//     choice,
-//     index,
-//     nodeIds,
-//     onUpdate,
-//     onDelete
-// }) => {
-//     const [isExpanded, setIsExpanded] = useState(false);
-
-//     // --- Handlers for Choice's Main Fields ---
-
-//     const handleChoiceFieldChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-//         const { name, value } = e.target;
-//         onUpdate(index, { ...choice, [name]: value });
-//     }, [choice, index, onUpdate]);
-
-
-//     // --- Handlers for Adjustments Array ---
-
-//     const handleAdjustmentUpdate = useCallback((adjIndex: number, newAdj: StatAdjustment) => {
-//         const updatedAdjustments = choice.adjustments.map((adj, i) => (i === adjIndex ? newAdj : adj));
-//         onUpdate(index, { ...choice, adjustments: updatedAdjustments });
-//     }, [choice, index, onUpdate]);
-
-//     const handleAdjustmentDelete = useCallback((adjIndex: number) => {
-//         const updatedAdjustments = choice.adjustments.filter((_, i) => i !== adjIndex);
-//         onUpdate(index, { ...choice, adjustments: updatedAdjustments });
-//     }, [choice, index, onUpdate]);
-
-//     const handleAdjustmentAdd = useCallback(() => {
-//         onUpdate(index, { ...choice, adjustments: [...choice.adjustments, newEmptyAdjustment()] });
-//     }, [choice, index, onUpdate]);
-
-
-//     return (
-//         <div className="choice-card">
-//             <div className="choice-header" onClick={() => setIsExpanded(!isExpanded)}>
-//                 <span className="choice-text" title={choice.text}>
-//                     {choice.text || "New Choice"} ({choice.nextNodeId || "DEAD END"})
-//                 </span>
-//                 <div style={{ display: 'flex', gap: '0.5rem' }}>
-//                     <button
-//                         onClick={(e) => { e.stopPropagation(); onDelete(index); }}
-//                         className="text-red-400 hover:text-red-500 transition duration-150"
-//                     >
-//                         <Trash2 size={18} />
-//                     </button>
-//                     <button className="text-gray-400">
-//                         {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-//                     </button>
-//                 </div>
-//             </div>
-//             {isExpanded && (
-//                 <div className="adjustment-area">
-//                     {/* Choice Text Input */}
-//                     <input
-//                         type="text"
-//                         name="text"
-//                         placeholder="Choice Text"
-//                         className="form-input text-sm"
-//                         style={{ padding: '0.5rem', fontSize: '0.875rem', marginBottom: '0.5rem' }}
-//                         value={choice.text}
-//                         onChange={handleChoiceFieldChange}
-//                     />
-//                     {/* Next Node Selector */}
-//                     <select
-//                         className="next-node-selector"
-//                         name="nextNodeId"
-//                         style={{ marginBottom: '0.5rem' }}
-//                         value={choice.nextNodeId}
-//                         onChange={handleChoiceFieldChange}
-//                     >
-//                         <option value="">-- Select Next Node ID (Required) --</option>
-//                         {nodeIds.map(id => (
-//                             <option key={id} value={id}>{id}</option>
-//                         ))}
-//                     </select>
-
-//                     {/* Stat Adjustments */}
-//                     <div className="form-label adj-label">Stat Adjustments:</div>
-//                     <div className='adj-list'>
-//                         {choice.adjustments.map((adj, adjIndex) => (
-//                             <StatAdjustmentEditor
-//                                 key={adjIndex}
-//                                 adjustment={adj}
-//                                 index={adjIndex}
-//                                 onUpdate={handleAdjustmentUpdate}
-//                                 onDelete={handleAdjustmentDelete}
-//                             />
-//                         ))}
-//                         <button onClick={handleAdjustmentAdd} className="btn-add-adjustment">
-//                             <Plus size={16} /> Add Adjustment
-//                         </button>
-//                     </div>
-//                 </div>
-//             )}
-//         </div>
-//     );
-// };
