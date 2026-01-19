@@ -8,6 +8,8 @@ interface ChoiceEditorProps {
     choice: GameChoice;
     index: number;
     nodeIds: string[];
+    isExpanded: boolean;
+    onToggle: () => void;
     onUpdate: (index: number, newChoice: GameChoice) => void;
     onDelete: (index: number) => void;
 }
@@ -16,10 +18,12 @@ export const ChoiceEditor: React.FC<ChoiceEditorProps> = ({
     choice,
     index,
     nodeIds,
+    isExpanded,
+    onToggle,
     onUpdate,
     onDelete
 }) => {
-    const [isExpanded, setIsExpanded] = useState(true); // Default to expanded for easier editing
+    // Internal state removed, controlled by parent now
     const { allStatNames } = useStory();
 
     const newEmptyAdjustment = useCallback((): StatAdjustment => ({
@@ -48,7 +52,7 @@ export const ChoiceEditor: React.FC<ChoiceEditorProps> = ({
 
     return (
         <div className="choice-item">
-            <div className="choice-summary" onClick={() => setIsExpanded(!isExpanded)}>
+            <div className="choice-summary" onClick={onToggle}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                     <div style={{ background: '#eef2ff', padding: '0.35rem', borderRadius: '0.35rem', color: '#6366f1' }}>
                         <GitBranch size={18} />
@@ -92,7 +96,7 @@ export const ChoiceEditor: React.FC<ChoiceEditorProps> = ({
                     <div className="input-group">
                         <label className="input-label">Target Node</label>
                         <select
-                            className="text-input"
+                            className="select-sleek"
                             name="nextNodeId"
                             value={choice.nextNodeId}
                             onChange={handleChoiceFieldChange}
@@ -107,8 +111,8 @@ export const ChoiceEditor: React.FC<ChoiceEditorProps> = ({
                     <div className="input-group" style={{ marginTop: '0.25rem' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <label className="input-label">Requirements & Adjustments</label>
-                            <button onClick={handleAdjustmentAdd} style={{ fontSize: '0.75rem', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                                <Plus size={14} /> Add Stats
+                            <button onClick={handleAdjustmentAdd} className="btn-pill-action">
+                                <Plus size={16} /> Add Stat
                             </button>
                         </div>
 

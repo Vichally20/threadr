@@ -148,7 +148,7 @@
 
 .text-input:focus,
 .text-area:focus {
-    background-color: #fff;
+    background-color: var(--color-bg-card);
     border-color: var(--color-primary);
     box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
@@ -243,13 +243,13 @@
 }
 
 .btn-secondary {
-    background-color: white;
+    background-color: var(--color-bg-element);
     border: 1px solid var(--color-border);
     color: var(--color-text-main);
 }
 
 .btn-secondary:hover {
-    background-color: #f9fafb;
+    background-color: var(--color-bg-input);
     border-color: #d1d5db;
 }
 
@@ -277,22 +277,113 @@
 }
 
 /* Adjustments */
+/* Adjustments Editor ROW */
 .adjustment-chips {
     display: flex;
-    flex-wrap: wrap;
+    flex-direction: column;
     gap: 0.5rem;
     margin-top: 0.75rem;
+    width: 100%;
 }
 
-.adj-chip {
-    display: flex;
+.adj-editor {
+    display: grid;
+    grid-template-columns: 1fr 80px auto;
+    gap: 0.5rem;
+    align-items: center;
+    background-color: var(--color-bg-element);
+    padding: 0.35rem 0.5rem 0.35rem 0.75rem;
+    border-radius: 999px;
+    /* Pill shape */
+    border: 1px solid var(--color-border);
+    transition: all 0.2s;
+}
+
+.adj-editor:hover {
+    border-color: var(--color-primary);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.adj-select,
+.adj-input {
+    background: transparent;
+    border: none;
+    font-size: 0.9rem;
+    color: var(--color-text-main);
+    outline: none;
+}
+
+.adj-select {
+    font-weight: 500;
+    cursor: pointer;
+    color: var(--color-primary);
+}
+
+.adj-input {
+    text-align: right;
+    font-family: monospace;
+    font-weight: 600;
+}
+
+/* Pill Action Button */
+.btn-pill-action {
+    display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    background-color: #eef2ff;
+    background-color: var(--color-bg-element);
     color: var(--color-primary);
-    border: 1px solid #c7d2fe;
-    padding: 0.25rem 0.5rem 0.25rem 0.75rem;
+    border: 1px solid var(--color-border);
+    padding: 0.4rem 1rem;
     border-radius: 999px;
     font-size: 0.85rem;
     font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-pill-action:hover {
+    background-color: var(--color-bg-input);
+    border-color: var(--color-primary);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+}
+
+/* Sleek Rounded Select */
+.select-sleek {
+    width: 100%;
+    padding: 0.75rem 1.25rem;
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    /* Rounded pill */
+    font-size: 0.95rem;
+    color: var(--color-text-main);
+    background-color: var(--color-bg-element);
+    appearance: none;
+    /* Remove default arrow */
+    cursor: pointer;
+    transition: all 0.2s;
+    /* Custom Indigo Chevron */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236366f1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    background-size: 1rem;
+}
+
+.select-sleek:hover {
+    border-color: var(--color-primary);
+    background-color: var(--color-bg-input);
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.spin-animation {
+    animation: spin 1s linear infinite;
 }

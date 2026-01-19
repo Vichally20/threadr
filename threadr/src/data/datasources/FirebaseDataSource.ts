@@ -1,4 +1,4 @@
-import { initializeApp } from 'firebase/app';
+import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getFirestore, collection, doc, setDoc, getDocs, deleteDoc, getDoc } from 'firebase/firestore';
 import { type StoryNode, type CustomStat } from '../../domain/entities/story';
 
@@ -13,35 +13,35 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase App and Firestore instance
-const app = initializeApp(firebaseConfig);
+const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 // Defines the collection structure: stories/{storyId}/nodes/{nodeId}
-const getCollectionRef = (storyId: string) => 
-  collection(db, `stories/${storyId}/nodes`);
+const getCollectionRef = (userId: string, storyId: string) =>
+  collection(db, `users/${userId}/stories/${storyId}/nodes`);
 
 // Defines the configuration document path for global settings (like stats)
 const CONFIG_DOC_ID = 'config';
 
-const getStatDocRef = (storyId: string) =>
-  doc(db, `stories/${storyId}/config`, CONFIG_DOC_ID); // Using a subcollection 'config' for better structure
+const getStatDocRef = (userId: string, storyId: string) =>
+  doc(db, `users/${userId}/stories/${storyId}/config`, CONFIG_DOC_ID); // Using a subcollection 'config' for better structure
 
 export const FirebaseDataSource = {
   /**
    * Fetches all nodes for a given story from Firestore.
    */
-  async fetchNodes(storyId: string): Promise<StoryNode[]> {
+  async fetchNodes(userId: string, storyId: string): Promise<StoryNode[]> {
     try {
-        const querySnapshot = await getDocs(getCollectionRef(storyId));
-        
-        // Map Firestore documents back to the StoryNode interface
-        return querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        } as StoryNode));
+      const querySnapshot = await getDocs(getCollectionRef(userId, storyId));
+
+      // Map Firestore documents back to the StoryNode interface
+      return querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      } as StoryNode));
     } catch (e) {
-        console.error("Error fetching nodes:", e);
-        return [];
+      console.error("Error fetching nodes:", e);
+      return [];
     }
   },
 
@@ -49,42 +49,44 @@ export const FirebaseDataSource = {
    * Saves or updates a single node using its ID as the document key.
    * This is the primary function for CRUD operations.
    */
-  async saveNode(storyId: string, node: StoryNode): Promise<void> {
+  async saveNode(userId: string, storyId: string, node: StoryNode): Promise<void> {
     try {
-        const docRef = doc(getCollectionRef(storyId), node.id);
-        // Use setDoc with merge:true to avoid overwriting the entire document
-        await setDoc(docRef, node as any, { merge: true }); // Cast to 'any' for simpler Firestore interaction
+      const docRef = doc(getCollectionRef(userId, storyId), node.id);
+      // Use setDoc with merge:true to avoid overwriting the entire document
+      await setDoc(docRef, node, { merge: true });
     } catch (e) {
-        console.error(`Error saving node ${node.id}:`, e);
-        throw new Error("Failed to save node to Firestore.");
+      console.error(`Error saving node ${node.id}:`, e);
+      throw new Error("Failed to save node to Firestore.");
     }
   },
 
   /**
    * Deletes a node.
    */
-  async deleteNode(storyId: string, nodeId: string): Promise<void> {
+  async deleteNode(userId: string, storyId: string, nodeId: string): Promise<void> {
     try {
-        const docRef = doc(getCollectionRef(storyId), nodeId);
-        await deleteDoc(docRef);
+      const docRef = doc(getCollectionRef(userId, storyId), nodeId);
+      await deleteDoc(docRef);
     } catch (e) {
-        console.error(`Error deleting node ${nodeId}:`, e);
-        throw new Error("Failed to delete node from Firestore.");
+      console.error(`Error deleting node ${nodeId}:`, e);
+      throw new Error("Failed to delete node from Firestore.");
     }
   },
 
   /**
    * Saves a list of nodes (used primarily for initial synchronization).
    */
-  async saveBulkNodes(storyId: string, nodes: StoryNode[]): Promise<void> {
-    await Promise.all(nodes.map(node => this.saveNode(storyId, node)));
+  async saveBulkNodes(userId: string, storyId: string, nodes: StoryNode[]): Promise<void> {
+    for (const node of nodes) {
+      await this.saveNode(userId, storyId, node);
+    }
   },
-   /**
-   * Fetches the stat configuration document.
-   */
-  async fetchStatConfig(storyId: string): Promise<CustomStat[]> {
+  /**
+  * Fetches the stat configuration document.
+  */
+  async fetchStatConfig(userId: string, storyId: string): Promise<CustomStat[]> {
     try {
-      const docRef = getStatDocRef(storyId);
+      const docRef = getStatDocRef(userId, storyId);
       const docSnap = await getDoc(docRef);
 
       if (docSnap.exists()) {
@@ -99,9 +101,9 @@ export const FirebaseDataSource = {
     }
   },
 
-  async saveStatConfig(storyId: string, stats: CustomStat[]): Promise<void> {
+  async saveStatConfig(userId: string, storyId: string, stats: CustomStat[]): Promise<void> {
     try {
-      const docRef = getStatDocRef(storyId);
+      const docRef = getStatDocRef(userId, storyId);
       // We save the entire array inside a field named 'stats'
       await setDoc(docRef, { stats: stats }, { merge: true });
     } catch (e) {

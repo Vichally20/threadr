@@ -131,8 +131,8 @@ interface StatListProps {
 
 const StatList: React.FC<StatListProps> = ({ title, stats, onDelete, color }) => {
     const accentColor = color === 'blue' ? '#3b82f6' : '#f59e0b';
-    const bgColor = color === 'blue' ? '#eff6ff' : '#fffbeb';
-    const borderColor = color === 'blue' ? '#dbeafe' : '#fef3c7';
+    const borderColor = color === 'blue' ? 'var(--color-primary)' : 'var(--color-accent)'; // Use theme vars for cleaner look
+    // unused bgColor removed
 
     if (stats.length === 0) return null;
 
@@ -147,12 +147,12 @@ const StatList: React.FC<StatListProps> = ({ title, stats, onDelete, color }) =>
                     <div
                         key={stat.name}
                         style={{
-                            backgroundColor: 'white',
+                            backgroundColor: 'var(--color-bg-card)',
                             border: `1px solid ${borderColor}`,
                             borderRadius: '0.5rem',
                             padding: '1rem',
                             position: 'relative',
-                            boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                            boxShadow: 'var(--shadow-sm)',
                             display: 'flex',
                             flexDirection: 'column',
                             gap: '0.25rem'

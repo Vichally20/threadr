@@ -8,6 +8,7 @@ import { SaveNodeUseCase } from '../../domain/usecases/save_story_usecase';
 import { DeleteNodeUseCase } from '../../domain/usecases/delete_story_usecase';
 import { AnalyzeGraphUseCase, type GraphIssue } from '../../domain/usecases/graphic_validation_usecase';
 import { useCallback } from 'react';
+import { useAuth } from './authContext';
 
 
 // --- INITIAL DATA STRUCTURE ---
@@ -146,12 +147,27 @@ export const StoryContext = createContext<StoryContextType>({
 
 export const StoryProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [state, dispatch] = useReducer(storyReducer, initialState);
+    const { state: authState } = useAuth();
+    const userId = authState.user?.uid;
 
     // 1. Dependency Injection (Use Memo for stability)
-    const repo = useMemo(() => new StoryRepositoryImpl(), []);
-    const loadStoryUseCase = useMemo(() => new LoadStoryUseCase(repo), [repo]);
-    const saveNodeUseCase = useMemo(() => new SaveNodeUseCase(repo), [repo]);
-    const deleteNodeUseCase = useMemo(() => new DeleteNodeUseCase(repo), [repo]);
+    const repo = useMemo(() => {
+        if (!userId) return null;
+        return new StoryRepositoryImpl(userId, 'threadr_project_main');
+    }, [userId]);
+
+    const loadStoryUseCase = useMemo(() => {
+        if (!repo) return null;
+        return new LoadStoryUseCase(repo)
+    }, [repo]);
+    const saveNodeUseCase = useMemo(() => {
+        if (!repo) return null;
+        return new SaveNodeUseCase(repo)
+    }, [repo]);
+    const deleteNodeUseCase = useMemo(() => {
+        if (!repo) return null;
+        return new DeleteNodeUseCase(repo)
+    }, [repo]);
     const analyzeGraphUseCase = useMemo(() => new AnalyzeGraphUseCase(), []);
     const allStatNames = useMemo(() => state.customStats.map(s => s.name), [state.customStats]);
 
@@ -159,6 +175,11 @@ export const StoryProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     // --- 2. ASYNC FUNCTIONS (Actions) ---
 
     const loadStory = useCallback(async () => {
+        if (!repo || !loadStoryUseCase) {
+            dispatch({ type: 'SET_ERROR', payload: "Authentication error: User not signed in." });
+            dispatch({ type: 'SET_LOADING', payload: false });
+            return;
+        };
         dispatch({ type: 'SET_LOADING', payload: true });
         try {
             const loadedNodes = await loadStoryUseCase.execute();
@@ -170,7 +191,13 @@ export const StoryProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                 await repo.saveAllNodes(initialNodes);
                 dispatch({ type: 'SET_NODES', payload: initialNodes });
             }
-            dispatch({ type: 'SET_CUSTOM_STATS', payload: ALL_STATS });
+            const savedStats = await repo.loadStatConfig();
+            if (savedStats.length > 0) {
+                dispatch({ type: 'SET_CUSTOM_STATS', payload: savedStats });
+            } else {
+                dispatch({ type: 'SET_CUSTOM_STATS', payload: ALL_STATS });
+                await repo.saveStatConfig(ALL_STATS);
+            }
             dispatch({ type: 'SET_ERROR', payload: null });
         } catch (e) {
             console.error("Load Error:", e);
@@ -181,6 +208,11 @@ export const StoryProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }, [loadStoryUseCase, repo]);
 
     const saveNode = useCallback(async (node: StoryNode) => {
+        if (!saveNodeUseCase) {
+            dispatch({ type: 'SET_ERROR', payload: "Authentication error: User not signed in." });
+            return;
+        };
+        const originalNode = state.nodes.find(n => n.id === node.id);
         // Optimistic UI update first
         dispatch({ type: 'UPDATE_NODE_SYNC', payload: node });
         try {
@@ -189,11 +221,14 @@ export const StoryProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         } catch (e) {
             console.error("Save Error:", e);
             dispatch({ type: 'SET_ERROR', payload: "Failed to save node to persistence." });
-            // NOTE: In a real app, you would revert the UI change here (pessimistic update).
+            if (originalNode) {
+                dispatch({ type: 'UPDATE_NODE_SYNC', payload: originalNode });
+            }
         }
-    }, [saveNodeUseCase]);
+    }, [saveNodeUseCase, state.nodes]);
 
     const saveStatConfig = useCallback(async (stats: CustomStat[]) => {
+        if (!repo) return;
         try {
             await repo.saveStatConfig(stats);
             dispatch({ type: 'SET_ERROR', payload: null });
@@ -204,40 +239,65 @@ export const StoryProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }, [repo]);
 
     const addCustomStat = useCallback(async (stat: CustomStat) => {
+        const newStats = [...state.customStats, stat];
         dispatch({ type: 'ADD_STAT_SYNC', payload: stat });
-        // NOTE: In a real app, this would be followed by await repo.saveStatConfig(state.customStats);
-        // For now, it's just a UI update.
-    }, []);
+        try {
+            await saveStatConfig(newStats);
+        } catch (e) {
+            dispatch({ type: 'DELETE_STAT_SYNC', payload: stat.name });
+        }
+    }, [state.customStats, saveStatConfig]);
 
     const deleteCustomStat = useCallback(async (name: string) => {
+        const originalStat = state.customStats.find(s => s.name === name);
         dispatch({ type: 'DELETE_STAT_SYNC', payload: name });
-        // NOTE: In a real app, this would be followed by await repo.saveStatConfig(state.customStats);
-        const updatedStats = state.customStats.filter(s => s.name !== name);
-        await saveStatConfig(updatedStats);
+        try {
+            const updatedStats = state.customStats.filter(s => s.name !== name);
+            await saveStatConfig(updatedStats);
+        } catch (e) {
+            if (originalStat) {
+                dispatch({ type: 'ADD_STAT_SYNC', payload: originalStat });
+            }
+        }
     }, [state.customStats, saveStatConfig]);
 
     const addNode = useCallback(async (parentId: string | null) => {
-        const newNode = newEmptyNode(generateId('node'));
-        // If we have a parent, try to link it automatically for flow visualization
-        if (parentId && state.selectedNodeId) {
-            const parentNode = state.nodes.find(n => n.id === parentId);
-            if (parentNode) {
-                // Find an open choice slot and link it
-                const updatedChoices = parentNode.choices.map(c =>
-                    c.nextNodeId === "" ? { ...c, nextNodeId: newNode.id } : c
-                );
-                // This is a complex synchronization point, requires care!
-                dispatch({ type: 'UPDATE_NODE_SYNC', payload: { ...parentNode, choices: updatedChoices } });
-                await saveNode({ ...parentNode, choices: updatedChoices });
-            }
+        if (!saveNodeUseCase) {
+            dispatch({ type: 'SET_ERROR', payload: "Authentication error: User not signed in." });
+            return;
         }
+        const newNode = newEmptyNode(generateId('node'));
+        try {
+            // If we have a parent, try to link it automatically for flow visualization
+            if (parentId && state.selectedNodeId) {
+                const parentNode = state.nodes.find(n => n.id === parentId);
+                if (parentNode) {
+                    // Find an open choice slot and link it
+                    const updatedChoices = parentNode.choices.map(c =>
+                        c.nextNodeId === "" ? { ...c, nextNodeId: newNode.id } : c
+                    );
+                    // This is a complex synchronization point, requires care!
+                    dispatch({ type: 'UPDATE_NODE_SYNC', payload: { ...parentNode, choices: updatedChoices } });
+                    await saveNode({ ...parentNode, choices: updatedChoices });
+                }
+            }
 
-        dispatch({ type: 'ADD_NODE_SYNC', payload: newNode });
-        await saveNode(newNode);
-    }, [state.selectedNodeId, state.nodes, saveNode]);
+            dispatch({ type: 'ADD_NODE_SYNC', payload: newNode });
+            await saveNode(newNode);
+        } catch (e) {
+            console.error("Add Node Error:", e);
+            dispatch({ type: 'SET_ERROR', payload: "Failed to add node." });
+            dispatch({ type: 'DELETE_NODE_SYNC', payload: newNode.id });
+        }
+    }, [state.selectedNodeId, state.nodes, saveNode, saveNodeUseCase]);
 
 
     const deleteNode = useCallback(async (nodeId: string) => {
+        if (!deleteNodeUseCase) {
+            dispatch({ type: 'SET_ERROR', payload: "Authentication error: User not signed in." });
+            return;
+        };
+        const originalNode = state.nodes.find(n => n.id === nodeId);
         if (state.nodes.length <= 1) {
             dispatch({ type: 'SET_ERROR', payload: "Cannot delete the last node." });
             return;
@@ -251,9 +311,11 @@ export const StoryProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         } catch (e) {
             console.error("Delete Error:", e);
             dispatch({ type: 'SET_ERROR', payload: "Failed to delete node from persistence." });
-            // Re-fetch or manually re-add node here if needed.
+            if (originalNode) {
+                dispatch({ type: 'ADD_NODE_SYNC', payload: originalNode });
+            }
         }
-    }, [state.nodes.length, deleteNodeUseCase]);
+    }, [state.nodes, deleteNodeUseCase]);
 
     const selectNode = useCallback((nodeId: string) => {
         dispatch({ type: 'SELECT_NODE', payload: nodeId });
@@ -279,8 +341,10 @@ export const StoryProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     // Effect to load data on initial mount
     useEffect(() => {
-        loadStory();
-    }, [loadStory]);
+        if (userId) {
+            loadStory();
+        }
+    }, [userId, loadStory]);
 
 
     const contextValue = useMemo(() => ({
@@ -318,4 +382,10 @@ export const StoryProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     );
 };
 
-export const useStory = () => useContext(StoryContext);
+export const useStory = () => {
+    const context = useContext(StoryContext);
+    if (context === undefined) {
+        throw new Error('useStory must be used within a StoryProvider');
+    }
+    return context;
+};

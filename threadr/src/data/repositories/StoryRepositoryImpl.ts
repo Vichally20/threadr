@@ -12,39 +12,58 @@ export class StoryRepositoryImpl implements IStoryRepository {
 
   // NOTE: This storyId is defined as a constant for internal use.
   private readonly storyId: string = STORY_ID;
+  private readonly userId: string | null;
+
+
+  /**
+   * @param userId The UID of the authenticated user.
+   * @param storyId The unique identifier for the story (defaults to 'default_story').
+   */
+  constructor(userId: string | null, storyId: string = STORY_ID) {
+    this.userId = userId;
+    this.storyId = storyId;
+  }
 
   async getStory(): Promise<StoryNode[]> {
-    return FirebaseDataSource.fetchNodes(this.storyId);
+    if (!this.userId) return Promise.resolve([]);
+    return FirebaseDataSource.fetchNodes(this.userId, this.storyId);
   }
 
   // NOTE: This implementation currently fetches all nodes and filters locally. 
   // For large stories, this should be optimized to use a Firestore query to fetch only the needed document.
   async getStoryNodeById(id: string): Promise<StoryNode | undefined> {
+    if (!this.userId) return Promise.resolve(undefined);
     const nodes = await this.getStory();
     return nodes.find(node => node.id === id);
   }
 
   async saveStoryNode(node: StoryNode): Promise<void> {
-    return FirebaseDataSource.saveNode(this.storyId, node);
+    if (!this.userId) return Promise.resolve();
+    return FirebaseDataSource.saveNode(this.userId, this.storyId, node);
   }
 
   async addStoryNode(node: StoryNode): Promise<void> {
-    return FirebaseDataSource.saveNode(this.storyId, node);
+    if (!this.userId) return Promise.resolve();
+    return FirebaseDataSource.saveNode(this.userId, this.storyId, node);
   }
 
-  async deleteStoryNode(id: string): Promise<void> {
-    return FirebaseDataSource.deleteNode(this.storyId, id);
+  async deleteStoryNode(id:string): Promise<void> {
+    if (!this.userId) return Promise.resolve();
+    return FirebaseDataSource.deleteNode(this.userId, this.storyId, id);
   }
 
   // Retain saveAllNodes for initialization/bulk operations
   async saveAllNodes(nodes: StoryNode[]): Promise<void> {
-    return FirebaseDataSource.saveBulkNodes(this.storyId, nodes);
+    if (!this.userId) return Promise.resolve();
+    return FirebaseDataSource.saveBulkNodes(this.userId, this.storyId, nodes);
   }
   async loadStatConfig(): Promise<CustomStat[]> {
-    return FirebaseDataSource.fetchStatConfig(this.storyId);
+    if (!this.userId) return Promise.resolve([]);
+    return FirebaseDataSource.fetchStatConfig(this.userId, this.storyId);
   }
 
   async saveStatConfig(stats: CustomStat[]): Promise<void> {
-    return FirebaseDataSource.saveStatConfig(this.storyId, stats);
+    if (!this.userId) return Promise.resolve();
+    return FirebaseDataSource.saveStatConfig(this.userId, this.storyId, stats);
   }
 }

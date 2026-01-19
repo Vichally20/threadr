@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { LayoutGrid, AlertCircle, Plus, Save, Users, Zap, FileText, Sun, Moon } from 'lucide-react';
+import { LayoutGrid, AlertCircle, Plus, Save, Users, Zap, FileText, Sun, Moon, LogOut, User as UserIcon } from 'lucide-react';
 import { useStory } from '../context/StoryContext';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/authContext';
 import { NodeEditor } from '../components/node_editor';
 import { GraphVisualizationWrapper } from '../components/graph_visual';
 import { StatUtilityView } from './stat_view';
@@ -13,6 +14,7 @@ import { StatUtilityView } from './stat_view';
 export const EditorView: React.FC = () => {
     const { state, selectNode, addNode, graphIssues } = useStory();
     const { theme, toggleTheme } = useTheme();
+    const { state: authState, signOut } = useAuth();
     const [viewMode, setViewMode] = useState<'editor' | 'graph' | 'stats'>('editor');
 
     const allNodeIds = state.nodes.map(n => n.id);
@@ -122,6 +124,57 @@ export const EditorView: React.FC = () => {
                 </div>
 
                 <div className="sidebar-footer">
+                    {authState.user && (
+                        <div style={{
+                            marginBottom: '1rem',
+                            padding: '0.75rem',
+                            background: 'rgba(255,255,255,0.05)',
+                            borderRadius: '0.5rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            gap: '0.5rem'
+                        }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', overflow: 'hidden' }}>
+                                <div style={{
+                                    width: '24px',
+                                    height: '24px',
+                                    borderRadius: '50%',
+                                    background: 'var(--color-primary)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '0.75rem',
+                                    fontWeight: 'bold',
+                                    color: 'white'
+                                }}>
+                                    {authState.user.displayName ? authState.user.displayName[0].toUpperCase() : <UserIcon size={14} />}
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                                    <span style={{ fontSize: '0.8rem', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                        {authState.user.displayName || 'User'}
+                                    </span>
+                                </div>
+                            </div>
+                            <button
+                                onClick={signOut}
+                                style={{
+                                    background: 'transparent',
+                                    border: 'none',
+                                    color: '#94a3b8',
+                                    cursor: 'pointer',
+                                    padding: '4px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center'
+                                }}
+                                title="Sign Out"
+                            >
+                                <LogOut size={16} />
+                            </button>
+                        </div>
+                    )}
+
                     {state.error && (
                         <div style={{ background: '#450a0a', color: '#fca5a5', padding: '0.75rem', borderRadius: '0.5rem', fontSize: '0.85rem', marginBottom: '0.5rem', display: 'flex', gap: '0.5rem' }}>
                             <AlertCircle size={16} />
