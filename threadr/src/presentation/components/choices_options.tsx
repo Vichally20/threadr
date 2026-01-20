@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useCallback } from 'react';
 import { ChevronDown, ChevronUp, Plus, Trash2, GitBranch } from 'lucide-react';
 import { type GameChoice, type StatAdjustment } from '../../domain/entities/story';
 import { useStory } from '../context/StoryContext';

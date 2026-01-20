@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef, useEffect, useState } from 'react';
+import React, { useMemo, useEffect } from 'react';
 // NOTE: These imports rely on successful NPM installation of reactflow and dagre.
 import ReactFlow, {
     Controls,
@@ -108,7 +108,7 @@ interface GraphVisualizerProps {
 }
 
 export const GraphVisualizer: React.FC<GraphVisualizerProps> = ({ storyNodes }) => {
-    const { graphIssues, selectNode } = useStory();
+    const { graphIssues } = useStory();
     const { fitView } = useReactFlow();
 
     // 1. Transform Story JSON to React Flow format

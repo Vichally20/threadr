@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { useStory } from '../context/StoryContext';
-import { Trash2, Plus, Users, Zap, AlertCircle } from 'lucide-react';
+import { Trash2, Plus, AlertCircle } from 'lucide-react';
 import { type CustomStat } from '../../domain/entities/story';
 
 /**

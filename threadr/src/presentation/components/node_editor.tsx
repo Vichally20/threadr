@@ -1,5 +1,5 @@
 import React, { useCallback, useState, useEffect } from 'react';
-import { Plus, Trash2, ArrowUpRight, Check, Loader } from 'lucide-react';
+import { Plus, Trash2, Check, Loader } from 'lucide-react';
 import { type StoryNode, type GameChoice } from '../../domain/entities/story';
 import { useStory } from '../context/StoryContext';
 import { ChoiceEditor } from './choices_options';
